@@ -43,16 +43,19 @@ router.post("/update/:id", async (req, res) => {
     if (!patient) {
       return res.status(401).json({ messsage: "Patient ID doesnt exists!" });
     } else {
-      const update = await Patient.findOneAndUpdate(
-        { _id: req.params.id },
-        {
-          gender: req.body.gender,
-          age: req.body.age,
-          risk_factors: req.body.risk_factors,
-          histo_diagnosis: req.body.histo_diagnosis,
-          category: req.body.category,
+      patient.name = req.body.name;
+      patient.DOB = req.body.DOB;
+      patient.risk_factors = req.body.risk_factors;
+      patient.gender = req.body.gender;
+      patient.histo_diagnosis = req.body.histo_diagnosis;
+      patient.consent_form = req.body.consent_form;
+
+      patient.save((err) => {
+        if (err) {
+          console.log(err);
+          return res.status(400).json({ messsage: err.message });
         }
-      );
+      });
 
       const updatedPatient = await Patient.findById(req.params.id);
       const others = updatedPatient._doc;
