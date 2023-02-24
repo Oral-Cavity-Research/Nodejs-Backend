@@ -36,9 +36,12 @@ router.post("/add", async (req, res) => {
 });
 
 //update patient details
-router.post("/update/:id", async (req, res) => {
+router.post("/update/:id", authenticateToken, async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    const requestedClinician = await User.find({ email: req.email });
+    const patient = await Patient.find({
+      clinician_id: requestedClinician._id,
+    });
 
     if (!patient) {
       return res.status(401).json({ messsage: "Patient ID doesnt exists!" });
@@ -106,7 +109,10 @@ router.get("/all", authenticateToken, async (req, res) => {
 
 router.get("/:id", authenticateToken, async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    const requestedClinician = await User.find({ email: req.email });
+    const patient = await Patient.find({
+      clinician_id: requestedClinician._id,
+    });
 
     if (patient) {
       return res.status(200).json(patient);
