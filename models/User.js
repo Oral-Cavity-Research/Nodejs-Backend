@@ -32,6 +32,17 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    availability: {
+      type: Boolean,
+      default: true,
+    },
+    teleConEntry_id: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "TeleConEntry",
+        required: false,
+      },
+    ],
     role: {
       type: Array,
       required: true,
@@ -44,20 +55,4 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-const ReviewerSchema = new mongoose.Schema({
-  availability: {
-    type: Boolean,
-    default: false,
-  },
-  teleConEntry_id: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "TeleConEntry",
-    },
-  ],
-}).add(UserSchema);
-
-const User = mongoose.model("User", UserSchema);
-const Reviewer = mongoose.model("Reviewer", ReviewerSchema);
-
-module.exports = { User, Reviewer };
+module.exports = mongoose.model("User", UserSchema);

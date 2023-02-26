@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const jwt = require("jsonwebtoken");
-const { User, Reviewer } = require("../models/User");
+const User = require("../models/User");
 const Request = require("../models/Request");
 const bcrypt = require("bcrypt");
 const {
@@ -21,16 +21,13 @@ router.post("/signup", async (req, res) => {
     const userRegno = await User.findOne({ reg_no: req.body.reg_no });
     const userEmail = await User.findOne({ email: req.body.email });
 
-    const reviewerRegno = await Reviewer.findOne({ reg_no: req.body.reg_no });
-    const reviewerEmail = await Reviewer.findOne({ email: req.body.email });
-
-    if (userRegno || reviewerRegno) {
+    if (userRegno) {
       return res
         .status(401)
         .json({ message: "The Reg No is already registered" });
     }
 
-    if (userEmail || reviewerEmail) {
+    if (userEmail) {
       return res
         .status(401)
         .json({ message: "Email address is already registered" });
@@ -74,11 +71,9 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    const reviewer = await Reviewer.findOne({ email: req.body.email });
 
-    if (!user || !reviewer)
-      return res.status(400).json({ message: "Wrong credentials!" });
-    
+    if (!user) return res.status(400).json({ message: "Wrong credentials!" });
+
     const validate = await bcrypt.compare(req.body.password, user.password);
     if (!validate)
       return res.status(400).json({ message: "Wrong credentials!" });

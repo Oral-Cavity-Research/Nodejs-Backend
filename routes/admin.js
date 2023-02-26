@@ -87,14 +87,14 @@ router.post("/accept/:id", authenticateToken, async (req, res) => {
       }
 
       const newUser = new User({
-        username: req.body.username,
+        username: request.username,
         email: request.email,
         password: request.password,
         reg_no: request.reg_no,
         role: req.body.role,
         hospital: request.hospital,
-        designation: request.designation ? req.body.designation : "",
-        contact_no: request.contact_no ? req.body.contact_no : "",
+        designation: request.designation,
+        contact_no: request.contact_no,
         availability: request.availability,
       });
 
