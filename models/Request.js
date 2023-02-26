@@ -32,10 +32,6 @@ const RequestSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    availability: {
-      type: Boolean,
-      default: true,
-    },
   },
   {
     versionKey: false,

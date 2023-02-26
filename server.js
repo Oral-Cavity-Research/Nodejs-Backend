@@ -53,6 +53,9 @@ app.use("/api/user/patient", patientRoute);
 const userRoute = require('./routes/user');
 app.use("/api/user", userRoute);
 
+// const entryRoute = require('./routes/entry');
+// app.use("/api/entry", entryRoute);
+
 
 app.use("/Storage",express.static(path.join(__dirname, '/Storage')))
 app.use("/Storage/images",express.static(path.join(__dirname, '/Storage/images')))

@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const { User, Reviewer } = require("../models/User");
 const Request = require("../models/Request");
 const bcrypt = require("bcrypt");
 const {
@@ -15,49 +15,58 @@ const {
 // add to request list
 router.post("/signup", async (req, res) => {
   try {
-    const reqreg = await Request.findOne({ reg_no: req.body.reg_no });
-    const reqemail = await Request.findOne({ email: req.body.email });
-    const userregno = await User.findOne({ reg_no: req.body.reg_no });
-    const email = await User.findOne({ email: req.body.email });
+    const reqReg = await Request.findOne({ reg_no: req.body.reg_no });
+    const reqEmail = await Request.findOne({ email: req.body.email });
 
-    if (userregno) {
+    const userRegno = await User.findOne({ reg_no: req.body.reg_no });
+    const userEmail = await User.findOne({ email: req.body.email });
+
+    const reviewerRegno = await Reviewer.findOne({ reg_no: req.body.reg_no });
+    const reviewerEmail = await Reviewer.findOne({ email: req.body.email });
+
+    if (userRegno || reviewerRegno) {
       return res
         .status(401)
         .json({ message: "The Reg No is already registered" });
     }
 
-    if (email) {
+    if (userEmail || reviewerEmail) {
       return res
         .status(401)
         .json({ message: "Email address is already registered" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
-
-    if (reqreg || reqemail) {
+    if (reqReg || reqEmail) {
       return res
         .status(200)
         .json({ message: "A request for registration already exists." });
     } else {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(req.body.password, salt);
+
       const newUserRequest = new Request({
         reg_no: req.body.reg_no,
         username: req.body.username,
         email: req.body.email,
         password: hashedPassword,
         hospital: req.body.hospital,
-        designation: req.body.designation ? req.body.designation : "",
-        contact_no: req.body.contact_no ? req.body.contact_no : "",
-        availability: req.body.availability,
+        designation: req.body.designation,
+        contact_no: req.body.contact_no,
       });
       const userRequest = await newUserRequest.save();
-      const { password, ...others } = userRequest._doc;
+      const savedUserRequest = await Request.findOne({
+        _id: userRequest._id,
+        reg_no: req.body.reg_no,
+        email: req.body.email,
+      });
+      const { password, ...others } = savedUserRequest._doc;
       others["message"] =
         "Request is sent successfully. You will receive an Email on acceptance";
       return res.status(200).json(others);
     }
   } catch (error) {
     res.status(500).json(error);
+    console.log(error);
   }
 });
 
@@ -65,7 +74,11 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    if (!user) return res.status(400).json({ message: "Wrong credentials!" });
+    const reviewer = await Reviewer.findOne({ email: req.body.email });
+
+    if (!user || !reviewer)
+      return res.status(400).json({ message: "Wrong credentials!" });
+    
     const validate = await bcrypt.compare(req.body.password, user.password);
     if (!validate)
       return res.status(400).json({ message: "Wrong credentials!" });
