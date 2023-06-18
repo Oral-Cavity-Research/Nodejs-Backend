@@ -4,17 +4,23 @@ const Image = require("../models/Image");
 
 router.get("/filterimages", async (req, res) => {
   try {
-    const { category } = req.query;
+    // get the category and the page number , and the limit
+    const { category, page, limit } = req.query;
 
     //store the filteredImages here
     let filteredImages;
 
+    //calculate the skip value
+    const skip = (page - 1) * limit;
+
     if (category !== "all") {
       filteredImages = await Image.find({
         category,
-      });
+      })
+        .skip(skip)
+        .limit(limit);
     } else {
-      filteredImages = await Image.find();
+      filteredImages = await Image.find().skip(skip).limit(limit);
     }
 
     return res.status(200).json({ status: "success", data: filteredImages });
