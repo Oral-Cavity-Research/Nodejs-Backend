@@ -673,6 +673,74 @@ const body = (type, message, name)=>{
     }
 }
 
+const reviewReminderBody = (reviewer, assignments) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Telecon Session Review Reminder</title>
+          <style>
+            /* Styling for the email body */
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 14px;
+              line-height: 1.5;
+              color: #444444;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 24px;
+            }
+            p {
+              margin-bottom: 16px;
+            }
+            ul {
+              list-style-type: disc;
+              margin-left: 24px;
+              margin-bottom: 16px;
+            }
+            li {
+              margin-bottom: 4px;
+            }
+            button {
+              background-color: #008CBA;
+              color: #FFFFFF;
+              font-size: 16px;
+              padding: 12px 24px;
+              border: none;
+              border-radius: 4px;
+              text-decoration: none;
+              cursor: pointer;
+              margin-bottom: 16px;
+            }
+            button:hover {
+              background-color: #006D87;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Telecon Session Review Reminder</h1>
+          <p>Hello ${reviewer.username},</p>
+          <p>This is a reminder that you have the following telecon session review assignments that have not been completed yet:</p>
+          <ul>
+              ${assignments
+                .map(
+                  (a) =>
+                    `<li>${a.telecon_entry.complaint} - ${a.telecon_entry.patient.patient_name}</li>`
+                )
+                .join("")}
+          </ul>
+          <p>Please complete these reviews as soon as possible. Your timely feedback is appreciated.</p>
+          <button>Go to Reviews Dashboard</button>
+          <p>Thank you for your cooperation.</p>
+          <p>Sincerely,<br>The Telecon Session Review Team</p>
+        </body>
+      </html>
+      
+      `;
+  };
+  
 function sendEmail(recieversEmail, type, message, name){
 
     return new Promise((resolve, reject)=>{
@@ -708,4 +776,65 @@ function sendEmail(recieversEmail, type, message, name){
 
 }
 
-module.exports = { sendEmail };
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SENDERS_EMAIL,
+      pass: process.env.SENDERS_PASS,
+    },
+  });
+  
+  // Weekly email function
+  const sendWeeklyEmails = async () => {
+    const Assignment = require("../models/Assignment");
+    try {
+      // Get all the assignments that have not been reviewed yet
+      const assignments = await Assignment.find({ reviewed: false })
+        .populate("reviewer_id")
+        .populate("telecon_entry");
+      assignments.forEach((assignment) => {
+        assignment.telecon_entry.populate("patient");
+      });
+  
+      // console.log(assignments);
+  
+      // Group the assignments by reviewer
+      const assignmentsByReviewer = assignments.reduce((result, assignment) => {
+        const reviewerId = assignment.reviewer_id._id;
+        if (!result[reviewerId]) {
+          result[reviewerId] = [];
+        }
+        result[reviewerId].push(assignment);
+        return result;
+      }, {});
+  
+      // Send emails to each reviewer
+      const User = require("../models/User");
+      for (const reviewerId in assignmentsByReviewer) {
+        const reviewer = await User.findById(reviewerId);
+        const assignments = assignmentsByReviewer[reviewerId];
+        const emailBody = reviewReminderBody(reviewer, assignments);
+  
+        const sending = await transporter.sendMail(
+          {
+            from: process.env.SENDERS_EMAIL,
+            to: reviewer.email,
+            subject: "Telecon Review Assignments Reminder",
+            html: emailBody,
+          },
+          (err, info) => {
+            if (err) {
+              console.log(err);
+            } else {
+              console.log(info);
+            }
+          }
+        );
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  
+  module.exports = { sendEmail, sendWeeklyEmails };
+  
