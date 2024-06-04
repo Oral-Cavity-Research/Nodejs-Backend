@@ -40,6 +40,24 @@ if(mode ==0){
   app.use("/api/test", testRoute);
 }
 
+// Schedule the weekly email function to run every Thursday at 11.37 AM using node-cron
+// https://crontab.guru/#5_11_*_*_4
+cron.schedule("37 11 * * 4", () => {
+  emailService.sendWeeklyEmails();
+  console.log("Emails sent!");
+});
+
+// test Sending weekly emails
+app.get("/send-email", (req, res) => {
+  try {
+    emailService.sendWeeklyEmails();
+    res.status(200).json({ message: "Email is sent!" });
+  } catch (err) {
+    res
+      .status(200)
+      .json({ message: "Email notification Failed", msg: err.message });
+  }
+});
 
 // import routes
 const userAuthRoute = require("./routes/userAuth");
